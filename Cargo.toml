@@ -1,0 +1,20 @@
+[package]
+name = "fast_enum_conversion"
+version = "0.1.0"
+edition = "2021"
+description = "Zerocost conversion between enums"
+license = "MIT"
+keywords = ["enum", "convert", "zerocost", "enum"]
+categories = ["data-structures"]
+repository = "https://github.com/yasuo-ozu/fast_enum_conversion"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+fast_enum_conversion_macro = { version = "0.1.0", path = "macro" }
+addr_of_enum = "0.1.4"
+
+[workspace]
+members = [".", "macro"]
+resolver = "2"
