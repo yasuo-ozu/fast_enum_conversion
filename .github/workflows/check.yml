@@ -1,0 +1,49 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+name: check
+jobs:
+  format_test:
+    name: Format & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: [ "stable", "nightly" ]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install ${{ matrix.toolchain }}
+        shell: bash
+        run: |
+          rustup install ${{ matrix.toolchain }} --profile minimal
+          rustup default ${{ matrix.toolchain }}
+
+      - name: Install rustfmt & clippy
+        run: rustup component add rustfmt clippy
+
+      - name: Generate `Cargo.lock` to cache
+        shell: bash
+        run: cargo generate-lockfile
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            Cargo.lock
+          key: ci-${{ runner.os }}-${{ matrix.toolchain }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ci-${{ runner.os }}-${{ matrix.toolchain }}-cargo-
+
+      - name: Clippy check
+        run: cargo clippy -- -D warnings
+
+      - name: Test
+        run: cargo test

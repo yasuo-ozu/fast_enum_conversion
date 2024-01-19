@@ -12,7 +12,7 @@ fn to_tstr(krate: &Path, s: &str, span: Span) -> TypeTuple {
     for c in s.chars() {
         match c {
             'A'..='Z' | 'a'..='z' | '0'..='9' | '_' => {
-                let ident = Ident::new(&format!("_{}", c), span.clone());
+                let ident = Ident::new(&format!("_{}", c), span);
                 elems.push(parse_quote!(#krate::_tstr::#ident));
             }
             _ => abort!(span, "Bad char '{}'", c),
@@ -56,14 +56,14 @@ fn impl_conversion_target(krate: &Path, input: &ItemEnum) -> TokenStream2 {
         let fields = sort_fields(&variant.fields);
         out.extend(quote! {
             unsafe impl #impl_generics #krate::HasVariant<
-                #{to_tstr(&krate, &variant.ident.to_string(), variant.ident.span())}
+                #{to_tstr(krate, &variant.ident.to_string(), variant.ident.span())}
             > for #self_ty #whclause {
                 type Fields = (#(for (n, field) in fields.iter().enumerate()) {
                     #(if let Some(id) = &field.ident) {
-                        #{to_tstr(&krate, &id.to_string(), field.ident.span())}
+                        #{to_tstr(krate, &id.to_string(), field.ident.span())}
                     }
                     #(else) {
-                        #{to_tstr(&krate, &format!("{}", n), field.span())}
+                        #{to_tstr(krate, &format!("{}", n), field.span())}
                     },
                 });
                 type Offsets = [::core::primitive::usize; #{variant.fields.len()}];
@@ -75,7 +75,7 @@ fn impl_conversion_target(krate: &Path, input: &ItemEnum) -> TokenStream2 {
                     fn ptr_cast<T>(ptr: *const T) -> ::core::primitive::usize {
                         ptr as ::core::primitive::usize
                     }
-                    #{emit_offsets(&krate, &variant.ident, fields.as_slice())}
+                    #{emit_offsets(krate, &variant.ident, fields.as_slice())}
                 }
             }
         });
@@ -169,7 +169,7 @@ pub fn convert_to(args: TokenStream, input: TokenStream) -> TokenStream {
                     to_tstr(&krate, &field_name, field.ident.span())
                 })
                 .collect();
-            if fields.len() > 0 {
+            if !fields.is_empty() {
                 fields.push_punct(Default::default());
             }
             quote! {
